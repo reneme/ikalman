@@ -216,5 +216,12 @@ int main(int argc, char **argv) {
     Die(ss.str());
   }
 
+  for (auto pt : gpx->trackpoints()) {
+    std::cout << "(" << pt.lat << ", " << pt.lon << ") "
+              << pt.elevation  << "m üNN "
+              << pt.timestamp.tm_mday << "." << (1 + pt.timestamp.tm_mon) << "." << (1900 + pt.timestamp.tm_year) << " "
+              << pt.timestamp.tm_hour << ":" << pt.timestamp.tm_min << ":" << pt.timestamp.tm_sec << std::endl;
+  }
+
   delete gpx;
 }
