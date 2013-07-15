@@ -90,6 +90,9 @@ class GPX {
       return nullptr;
     }
 
+    // close the input file
+    close(fd);
+
     // parse the data
     using namespace rapidxml;
 
