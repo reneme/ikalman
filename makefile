@@ -1,12 +1,15 @@
-CC = gcc
-CFLAGS = -g -O2 -std=c99
-OBJECTS = matrix.o kalman.o gps.o
-
-%_test : %_test.o $(OBJECTS)
-	$(CC) $(CFLAGS) $< $(OBJECTS) -o $@
+CC = clang
+CFLAGS = -O3 -std=c99
+CXX = clang++
+CXXFLAGS = -O3 -std=c++11
+KOBJECTS = matrix.o kalman.o gps.o
+BINARY = hike
 
 %.o : %.c
 	$(CC) $(CFLAGS) -c $<
 
+all : $(KOBJECTS)
+	$(CXX) $(CXXFLAGS) -o $(BINARY) -I external/rapidxml smooth_hiking.cpp $(KOBJECTS)
+
 clean :
-	rm -f *.o *_test
+	rm -f *.o $(BINARY)
