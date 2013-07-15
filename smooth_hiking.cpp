@@ -3,6 +3,8 @@
 #include <sstream>
 #include <vector>
 #include <fcntl.h>
+#include <unistd.h>
+#include <ctime>
 
 extern "C" {
   #include "gps.h"
@@ -25,7 +27,7 @@ class GPX {
    public:
     Trackpoint(const float         lat,
                const float         lon,
-               const time_t        timestamp,
+               const struct tm     timestamp,
                const float         elevation = 0.0f,
                const std::string  &fix       = "") :
       lat(lat), lon(lon), timestamp(timestamp), elevation(elevation),
@@ -42,10 +44,12 @@ class GPX {
     }
 
    public:
-    float   lat, lon, elevation;
-    time_t  timestamp;
-    FixType fix;
+    float      lat, lon, elevation;
+    struct tm  timestamp;
+    FixType    fix;
   };
+
+  typedef std::vector<Trackpoint> TpVector;
 
  public:
   static GPX* Construct(const std::string &path) {
@@ -168,8 +172,7 @@ class GPX {
     }
 
     const std::string s_timestamp = time_node->first_node()->value();
-    //const time_t timestamp = ConvertTimestamp(s_timestamp);
-    const time_t timestamp(0);
+    const struct tm timestamp = ConvertTimestamp(s_timestamp);
     const float elevation = (elevation_node != nullptr)
                               ? ToFloat(elevation_node->first_node()->value())
                               : 0.0f;
@@ -189,11 +192,13 @@ class GPX {
 
   unsigned int PointCount() const { return trackpoints_.size(); }
 
+  const TpVector& trackpoints() const { return trackpoints_; }
+
  protected:
   GPX() {}
 
  private:
-  std::vector<Trackpoint> trackpoints_;
+  TpVector trackpoints_;
 };
 
 
