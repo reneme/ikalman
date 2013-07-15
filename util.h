@@ -3,6 +3,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <sstream>
+#include <ctime>
+#include <iomanip>
 
 #include "platform/platform.h"
 
@@ -35,9 +37,11 @@ float ToFloat(const std::string& s) {
   return x;
 }
 
-time_t ConvertTimestamp(const std::string &timestamp) {
-  struct tm t;
-  strptime(timestamp.c_str(), "%Y-%m-%d %H:%M", &t);
-  time_t t2 = mktime(&t);
-  return t2;
+struct tm ConvertTimestamp(const std::string &timestamp) {
+  struct tm tm;
+  constexpr auto format = "%Y-%m-%dT%T";
+
+  std::istringstream iss (timestamp);
+  iss >> std::get_time(&tm, format);
+  return tm;
 }
