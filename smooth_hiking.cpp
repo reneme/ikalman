@@ -305,6 +305,7 @@ int main(int argc, char **argv) {
   GPX gpx_output;
 
   time_t t1 = ToTimeT(gpx_input->trackpoints().front().timestamp);
+  bool first = true;
   for (auto &pt : gpx_input->trackpoints()) {
     const time_t t2 = ToTimeT(pt.timestamp);
     if (t2 > t1) {
@@ -312,12 +313,16 @@ int main(int argc, char **argv) {
     }
     t1 = t2;
 
-    double lat, lon;
-    get_lat_long(f, &lat, &lon);
-    gpx_output.AddTrackpoint(GPX::Trackpoint(static_cast<float>(lat),
-                                             static_cast<float>(lon),
-                                             pt.timestamp,
-                                             pt.elevation));
+    if (! first) {
+      double lat, lon;
+      get_lat_long(f, &lat, &lon);
+      gpx_output.AddTrackpoint(GPX::Trackpoint(static_cast<float>(lat),
+                                               static_cast<float>(lon),
+                                               pt.timestamp,
+                                               pt.elevation));
+    } else {
+      first = false;
+    }
   }
   free_filter(f);
   std::cout << "done" << std::endl;
