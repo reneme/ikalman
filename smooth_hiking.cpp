@@ -1,4 +1,5 @@
 #include <rapidxml.hpp>
+#include <rapidxml_print.hpp>
 
 #include <sstream>
 #include <vector>
@@ -199,8 +200,77 @@ class GPX {
 
   const TpVector& trackpoints() const { return trackpoints_; }
 
+  bool Write(const std::string &path) const {
+    using namespace rapidxml;
+
+    // create document header
+    xml_document<> doc;
+    xml_node<> *gpx_root = doc.allocate_node(node_element, "gpx");
+    xml_attribute<> *creator_attr = doc.allocate_attribute("creator", "Kalman Smoother");
+    gpx_root->append_attribute(creator_attr);
+    doc.append_node(gpx_root);
+
+    // create track and track-segment
+    xml_node<> *trk_node    = doc.allocate_node(node_element, "trk");
+    xml_node<> *trkseg_node = doc.allocate_node(node_element, "trkseg");
+    trk_node->append_node(trkseg_node);
+    gpx_root->append_node(trk_node);
+
+    // create the trackpoints
+    for (auto &pt : trackpoints_) {
+      xml_node<> *trkpt_node = doc.allocate_node(node_element, "trkpt");
+      xml_attribute<> *lat_attr  = CreateAttribute(doc, "lat", pt.lat);
+      xml_attribute<> *lon_attr  = CreateAttribute(doc, "lon", pt.lon);
+      xml_node<> *elevation_node = CreateNode(doc, "ele", pt.elevation);
+      xml_node<> *time_node      = CreateNode(doc, "time", pt.timestamp);
+      trkpt_node->append_attribute(lat_attr);
+      trkpt_node->append_attribute(lon_attr);
+      trkpt_node->append_node(elevation_node);
+      trkpt_node->append_node(time_node);
+      trkseg_node->append_node(trkpt_node);
+    }
+
+    // print everything into a stringstream for write back
+    std::stringstream ss;
+    ss << doc;
+
+    // open file for output
+    const int permissions = 0644;
+    const int fd = open(path.c_str(), O_WRONLY | O_CREAT, permissions);
+    if (fd < 0) {
+      std::cerr << "Failed to open file '" << path << "' for writing." << std::endl;
+      return false;
+    }
+
+    const std::string data = ss.str();
+    const int retval = write(fd, data.c_str(), data.size());
+    if (retval != data.size()) {
+      std::cerr << "Failed to write to file '" << path << "'." << std::endl;
+      return false;
+    }
+
+    close(fd);
+    return true;
+  }
+
  protected:
-  GPX() {}
+  template<typename T>
+  rapidxml::xml_attribute<>* CreateAttribute(rapidxml::xml_document<> &doc,
+                                             const char               *name,
+                                             const T                  &value) const {
+    const std::string  str   = ToString(value);
+    char              *c_str = doc.allocate_string(str.c_str());
+    return doc.allocate_attribute(name, c_str);
+  }
+
+  template<typename T>
+  rapidxml::xml_node<>* CreateNode(rapidxml::xml_document<> &doc,
+                                   const char               *name,
+                                   const T                  &value) const {
+    const std::string  str   = ToString(value);
+    char              *c_str = doc.allocate_string(str.c_str());
+    return doc.allocate_node(rapidxml::node_element, name, c_str);
+  }
 
  private:
   TpVector trackpoints_;
@@ -252,7 +322,12 @@ int main(int argc, char **argv) {
   free_filter(f);
   std::cout << "done" << std::endl;
 
-  gpx_output.Print();
+  std::cout << "Writing result to '" << argv[2] << "' ... ";
+  std::cout.flush();
+  const bool write_successful = gpx_output.Write(argv[2]);
+  if (write_successful) {
+    std::cout << "done" << std::endl;
+  }
 
   delete gpx_input;
   return 0;
