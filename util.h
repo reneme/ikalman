@@ -37,6 +37,21 @@ float ToFloat(const std::string& s) {
   return x;
 }
 
+template<typename T>
+std::string ToString(const T val) {
+  std::stringstream ss;
+  ss << val;
+  return ss.str();
+}
+
+template<>
+std::string ToString<struct tm>(const struct tm val) {
+  constexpr auto format = "%Y-%m-%dT%T";
+  std::stringstream ss;
+  ss << std::put_time(&val, format) << ".000Z";
+  return ss.str();
+}
+
 struct tm ConvertTimestamp(const std::string &timestamp) {
   struct tm tm;
   constexpr auto format = "%Y-%m-%dT%T";
