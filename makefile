@@ -1,7 +1,7 @@
 CC = clang
 CFLAGS = -O3 -std=c99
 CXX = clang++
-CXXFLAGS = -O3 -std=c++11
+CXXFLAGS = -O3 -std=c++11 -stdlib=libc++
 KOBJECTS = matrix.o kalman.o gps.o
 BINARY = hike
 
