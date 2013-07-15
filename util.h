@@ -45,3 +45,8 @@ struct tm ConvertTimestamp(const std::string &timestamp) {
   iss >> std::get_time(&tm, format);
   return tm;
 }
+
+time_t ToTimeT(const struct tm &timestamp) {
+  struct tm copy_timestamp(timestamp);
+  return mktime(&copy_timestamp);
+}

@@ -52,6 +52,8 @@ class GPX {
   typedef std::vector<Trackpoint> TpVector;
 
  public:
+  GPX() {}
+
   static GPX* Construct(const std::string &path) {
     if (! FileExists(path)) {
       std::cerr << "'" << path << "' does not exist." << std::endl;
@@ -209,20 +211,46 @@ int main(int argc, char **argv) {
     Die(ss.str());
   }
 
-  GPX* gpx = GPX::Construct(argv[1]);
-  if (!gpx) {
+  std::cout << "Reading file '" << argv[1] << "'" << std::endl;
+  std::cout.flush();
+  GPX* gpx_input = GPX::Construct(argv[1]);
+  if (!gpx_input) {
     std::stringstream ss;
     ss << "Cannot read file '" << argv[1] << "'";
     Die(ss.str());
   }
 
-  for (auto pt : gpx->trackpoints()) {
-    std::cout << "(" << pt.lat << ", " << pt.lon << ") "
-              << pt.elevation  << "m üNN "
-              << pt.timestamp.tm_mday << "." << (1 + pt.timestamp.tm_mon) << "." << (1900 + pt.timestamp.tm_year) << " "
-              << pt.timestamp.tm_hour << ":" << pt.timestamp.tm_min << ":" << pt.timestamp.tm_sec << std::endl;
+  if (gpx_input->PointCount() == 0) {
+    Die("GPX file contains no trackpoints");
   }
 
-  delete gpx;
+  std::cout << "Applying Kalman filter to track ... ";
+  std::cout.flush();
+
+  KalmanFilter f = alloc_filter_velocity2d(20.0);
+
+  GPX gpx_output;
+
+  time_t t1 = ToTimeT(gpx_input->trackpoints().front().timestamp);
+  for (auto &pt : gpx_input->trackpoints()) {
+    const time_t t2 = ToTimeT(pt.timestamp);
+    if (t2 > t1) {
+      update_velocity2d(f, pt.lat, pt.lon, (t2 - t1));
+    }
+    t1 = t2;
+
+    double lat, lon;
+    get_lat_long(f, &lat, &lon);
+    gpx_output.AddTrackpoint(GPX::Trackpoint(static_cast<float>(lat),
+                                             static_cast<float>(lon),
+                                             pt.timestamp,
+                                             pt.elevation));
+  }
+  free_filter(f);
+  std::cout << "done" << std::endl;
+
+  gpx_output.Print();
+
+  delete gpx_input;
   return 0;
 }
